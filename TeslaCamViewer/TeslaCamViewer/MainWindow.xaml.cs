@@ -335,7 +335,7 @@ namespace TeslaCamViewer
 
         private void viewOnGitHub_Menu_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start("http://www.google.com/");
+            System.Diagnostics.Process.Start("https://github.com/mattw01/TeslaCamViewer/");
         }
 
         private void SetFullscreen(bool Enable)

@@ -39,9 +39,13 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="66*" MinWidth="150"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="TeslaCam Files" Margin="2"  FontFamily="Segoe UI Semibold" FontSize="16"/>
-                <TreeView Width="Auto"  ItemsSource="{Binding ListItems}" x:Name="treeview">
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0"  Text="TeslaCam Files" Margin="2"  FontFamily="Segoe UI Semibold" FontSize="16"/>
+                <TreeView Grid.Row="1"  Width="Auto"  ItemsSource="{Binding ListItems}" x:Name="treeview">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate
         DataType="{x:Type local:TeslaCamDirectoryCollection}"
@@ -70,7 +74,7 @@
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
-            </StackPanel>
+            </Grid>
             <GridSplitter Width="2" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Background="DarkRed" />
             <Grid Grid.Column="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                 <Grid.RowDefinitions>
