@@ -34,5 +34,17 @@ namespace TeslaCamViewer.Properties {
                 this["EnableAutoSearch"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableAutoPlaylist {
+            get {
+                return ((bool)(this["EnableAutoPlaylist"]));
+            }
+            set {
+                this["EnableAutoPlaylist"] = value;
+            }
+        }
     }
 }

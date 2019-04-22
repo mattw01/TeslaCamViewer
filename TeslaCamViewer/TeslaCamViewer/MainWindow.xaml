@@ -6,7 +6,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:local="clr-namespace:TeslaCamViewer"
         mc:Ignorable="d"           
-        Title="TeslaCam Viewer V0.1" TitleCaps="False" Height="525" Width="817"
+        Title="TeslaCam Viewer V0.2" TitleCaps="False" Height="525" Width="817"
                         AllowDrop="True"  Drop="Window_Drop" KeyUp="MetroWindow_KeyUp"
                       Loaded="MetroWindow_Loaded">
     <Grid>
@@ -26,6 +26,12 @@
                 </MenuItem>
                 <MenuItem Header="_View">
                     <MenuItem Header="_Fullscreen" x:Name="fullscreen_Menu" Click="fullscreen_Menu_Click" IsCheckable="True"/>
+                </MenuItem>
+                <MenuItem Header="_Playback">
+                    <MenuItem Header="_Automatically Play Next Clip" IsCheckable="True" IsChecked="{Binding EnableAutoPlaylist}"/>
+                    <MenuItem Header="Playback Speed" IsEnabled="False"/>
+                    <Slider x:Name="playbackSpeed_Slider" Width ="190px" Minimum="-50" Maximum="50" TickPlacement="BottomRight" Ticks="0" 
+                            Value="{Binding DisplayPlaybackSpeed}" Thumb.DragDelta="playbackSpeed_Slider_DragDelta" />
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_View TeslaCam Viewer on GitHub" x:Name="viewOnGitHub_Menu" Click="viewOnGitHub_Menu_Click"/>
@@ -47,6 +53,10 @@
                 <TextBlock Grid.Row="0"  Text="TeslaCam Files" Margin="2"  FontFamily="Segoe UI Semibold" FontSize="16"/>
                 <TreeView Grid.Row="1"  Width="Auto"  ItemsSource="{Binding ListItems}" x:Name="treeview">
                     <TreeView.Resources>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="IsSelected"
+                    Value="{Binding Path=IsSelected, Mode=TwoWay}" />
+                        </Style>
                         <HierarchicalDataTemplate
         DataType="{x:Type local:TeslaCamDirectoryCollection}"
         ItemsSource="{Binding Events}">
@@ -97,7 +107,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
-                        <MediaElement x:Name="left" Grid.Column="0" LoadedBehavior="Manual" MediaOpened="MediaElement_MediaOpened" ScrubbingEnabled="True"/>
+                        <MediaElement x:Name="left" Grid.Column="0" LoadedBehavior="Manual" MediaOpened="MediaElement_MediaOpened" MediaEnded="left_MediaEnded"  ScrubbingEnabled="True"/>
                         <GridSplitter Margin="2 0 2 0" Width="2" Grid.Column="1"  VerticalAlignment="Stretch" HorizontalAlignment="Center"  Background="DarkRed" />
                         <MediaElement x:Name="right" Grid.Column="2" LoadedBehavior="Manual" ScrubbingEnabled="True"/>
                     </Grid>

@@ -26,6 +26,46 @@ namespace TeslaCamViewer
     public class MainWindowViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<TeslaCamDirectoryCollection> ListItems { get; set; }
+        public TeslaCamFileSet CurrentPlaybackFile { get; set; }
+
+        private double _DisplayPlaybackSpeed;
+        public double DisplayPlaybackSpeed
+        {
+            get
+            {
+                return this._DisplayPlaybackSpeed;
+            }
+            set
+            {
+                if (value != this._DisplayPlaybackSpeed)
+                {
+                    this._DisplayPlaybackSpeed = value;
+                    NotifyPropertyChanged();
+                    NotifyPropertyChanged("CalculatedPlaybackSpeed");
+                }
+            }
+        }
+        public double CalculatedPlaybackSpeed
+        {
+            get
+            {
+                if (DisplayPlaybackSpeed < 0)
+                {
+                    double calculatedMin = 0.25;
+                    double calculatedMax = 1.00;
+                    double displayMin = -50;
+                    double displayMax = 0;
+
+                    double calc = (calculatedMax - calculatedMin) / (displayMax - displayMin) * (DisplayPlaybackSpeed - displayMax) + calculatedMax;
+                    return calc;
+                }
+                else
+                    return this.DisplayPlaybackSpeed + 1.0;
+            }
+            set
+            {
+            }
+        }
 
         private string _LeftStatusText;
         public string LeftStatusText
@@ -73,7 +113,18 @@ namespace TeslaCamViewer
                 Properties.Settings.Default.Save();
             }
         }
-
+        public bool EnableAutoPlaylist
+        {
+            get
+            {
+                return Properties.Settings.Default.EnableAutoPlaylist;
+            }
+            set
+            {
+                Properties.Settings.Default.EnableAutoPlaylist = value;
+                Properties.Settings.Default.Save();
+            }
+        } 
         public MainWindowViewModel()
         {
             this.ListItems = new ObservableCollection<TeslaCamDirectoryCollection>();
@@ -200,6 +251,7 @@ namespace TeslaCamViewer
             if (playLeft) left.Play();
             if (playRight) right.Play();
             if (playFront) front.Play();
+            model.CurrentPlaybackFile = set;
         }
 
         private void Window_Drop(object sender, DragEventArgs e)
@@ -224,54 +276,62 @@ namespace TeslaCamViewer
         {
             Task.Run(() =>
             {
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background,
-                     new Action(() =>
-                     { this.model.LeftStatusText = "Searching for TeslaCam ..."; }));
-                var drives = System.IO.DriveInfo.GetDrives();
-                bool driveFound = false;
-                foreach (var drive in drives)
+                try
                 {
-                    var rootDirs = drive.RootDirectory.GetDirectories();
-                    foreach (var dirs in rootDirs)
+                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
+                         new Action(() =>
+                         { this.model.LeftStatusText = "Searching for TeslaCam ..."; }));
+                    var drives = System.IO.DriveInfo.GetDrives();
+                    bool driveFound = false;
+                    foreach (var drive in drives)
                     {
-                        if (dirs.Name == "TeslaCam")
+                        var rootDirs = drive.RootDirectory.GetDirectories();
+                        foreach (var dirs in rootDirs)
                         {
-                            var RecentClipsDir = dirs.GetDirectories().FirstOrDefault(e => e.Name == "RecentClips");
-                            if (RecentClipsDir != null)
+                            if (dirs.Name == "TeslaCam")
                             {
-                                TeslaCamDirectoryCollection c = new TeslaCamDirectoryCollection();
-                                c.BuildFromBaseDirectory(RecentClipsDir.FullName);
-                                c.SetDisplayName("Recent Clips");
-                                this.model.ListItems.Add(c);
-                                driveFound = true;
+                                var RecentClipsDir = dirs.GetDirectories().FirstOrDefault(e => e.Name == "RecentClips");
+                                if (RecentClipsDir != null)
+                                {
+                                    TeslaCamDirectoryCollection c = new TeslaCamDirectoryCollection();
+                                    c.BuildFromBaseDirectory(RecentClipsDir.FullName);
+                                    c.SetDisplayName("Recent Clips");
+                                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
+                                       new Action(() => { this.model.ListItems.Add(c); }));
+                                    driveFound = true;
+                                }
+                                var SavedClipsDir = dirs.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
+                                if (SavedClipsDir != null)
+                                {
+                                    TeslaCamDirectoryCollection c = new TeslaCamDirectoryCollection();
+                                    c.BuildFromBaseDirectory(SavedClipsDir.FullName);
+                                    c.SetDisplayName("Saved Clips");
+                                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
+                                       new Action(() => { this.model.ListItems.Add(c); }));
+                                    driveFound = true;
+                                }
                             }
-                            var SavedClipsDir = dirs.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
-                            if (SavedClipsDir != null)
+                            if (driveFound)
                             {
-                                TeslaCamDirectoryCollection c = new TeslaCamDirectoryCollection();
-                                c.BuildFromBaseDirectory(SavedClipsDir.FullName);
-                                c.SetDisplayName("Saved Clips");
-                                this.model.ListItems.Add(c);
-                                driveFound = true;
-                            }
-                        }
-                        if (driveFound)
-                        {
-                            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background,
-                                new Action(() =>
-                                { this.model.LeftStatusText = "Location: " + dirs.FullName; }));
+                                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background,
+                                    new Action(() =>
+                                    { this.model.LeftStatusText = "Location: " + dirs.FullName; }));
 
-                            return;
+                                return;
+                            }
                         }
                     }
-                }
-                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background,
-                    new Action(() =>
-                    {
-                        this.model.LeftStatusText = "Ready";
-                        this.ShowMessageAsync("TeslaCam Drive Not Found", "A TeslaCam drive could not automatically be found. Drag a folder or file to start playing.");
-                    }));
+                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
+                        new Action(() =>
+                        {
+                            this.model.LeftStatusText = "Ready";
+                            this.ShowMessageAsync("TeslaCam Drive Not Found", "A TeslaCam drive could not automatically be found. Drag a folder or file to start playing.");
+                        }));
 
+                }
+                catch (Exception ex)
+                {
+                }
             });
         }
 
@@ -330,7 +390,7 @@ namespace TeslaCamViewer
 
         private void about_Menu_Click(object sender, RoutedEventArgs e)
         {
-            this.ShowMessageAsync("TeslaCam Viewer V0.1", "TeslaCam Viewer V0.1 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
+            this.ShowMessageAsync("TeslaCam Viewer V0.2", "TeslaCam Viewer V0.2 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
         }
 
         private void viewOnGitHub_Menu_Click(object sender, RoutedEventArgs e)
@@ -350,7 +410,7 @@ namespace TeslaCamViewer
             {
                 this.SetCurrentValue(WindowStateProperty, WindowState.Normal);
                 this.SetCurrentValue(UseNoneWindowStyleProperty, false);
-                this.SetCurrentValue(ShowTitleBarProperty, true); // <-- this must be set to true
+                this.SetCurrentValue(ShowTitleBarProperty, true);
                 this.SetCurrentValue(IgnoreTaskbarOnMaximizeProperty, false);
             }
         }
@@ -361,9 +421,57 @@ namespace TeslaCamViewer
         }
         private void ShowWelcomeMessage()
         {
-            this.ShowMessageAsync("Welcome to TeslaCam Viewer!", "Getting Started:\n\nBrowse TeslaCam media in the left pane. " + 
-                "TeslaCam drive will automatically be detected on startup, or drag a folder containing TeslaCam data anywhere onto the window. " + 
+            this.ShowMessageAsync("Welcome to TeslaCam Viewer!", "Getting Started:\n\nBrowse TeslaCam media in the left pane. " +
+                "TeslaCam drive will automatically be detected on startup, or drag a folder containing TeslaCam data anywhere onto the window. " +
                 "Double click event in TeslaCam Files pane to start playing.");
+        }
+
+        private void left_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (model.EnableAutoPlaylist)
+                {
+                    TeslaCamFileSet target = this.model.CurrentPlaybackFile;
+                    TeslaCamEventCollection f = model.ListItems.SelectMany(d => d.Events).Where(d => d.Recordings.Contains(target)).First();
+                    if (f != null)
+                    {
+                        int currentFileIndex = f.Recordings.IndexOf(target);
+                        if (f.Recordings.Count - 1 > currentFileIndex)
+                        {
+                            TeslaCamFileSet nextSet = f.Recordings[currentFileIndex + 1];
+
+                            LoadFileSet(nextSet);
+                            var tvi = FindTviFromObjectRecursive(treeview, nextSet);
+
+                            if (tvi != null)
+                            {
+                                tvi.IsSelected = true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+        public static TreeViewItem FindTviFromObjectRecursive(ItemsControl ic, object o)
+        {
+            TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(o) as TreeViewItem;
+            if (tvi != null) return tvi;
+            foreach (object i in ic.Items)
+            {
+                TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
+                tvi = FindTviFromObjectRecursive(tvi2, o);
+                if (tvi != null) return tvi;
+            }
+            return null;
+        }
+
+        private void playbackSpeed_Slider_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+        {
+            this.left.SpeedRatio = model.CalculatedPlaybackSpeed;
+            this.right.SpeedRatio = model.CalculatedPlaybackSpeed;
+            this.front.SpeedRatio = model.CalculatedPlaybackSpeed;
         }
     }
 }
