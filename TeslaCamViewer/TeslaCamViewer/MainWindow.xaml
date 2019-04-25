@@ -53,10 +53,6 @@
                 <TextBlock Grid.Row="0"  Text="TeslaCam Files" Margin="2"  FontFamily="Segoe UI Semibold" FontSize="16"/>
                 <TreeView Grid.Row="1"  Width="Auto"  ItemsSource="{Binding ListItems}" x:Name="treeview">
                     <TreeView.Resources>
-                        <Style TargetType="TreeViewItem">
-                            <Setter Property="IsSelected"
-                    Value="{Binding Path=IsSelected, Mode=TwoWay}" />
-                        </Style>
                         <HierarchicalDataTemplate
         DataType="{x:Type local:TeslaCamDirectoryCollection}"
         ItemsSource="{Binding Events}">
