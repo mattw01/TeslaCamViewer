@@ -124,10 +124,12 @@ namespace TeslaCamViewer
                 Properties.Settings.Default.EnableAutoPlaylist = value;
                 Properties.Settings.Default.Save();
             }
-        } 
+        }
+        public VideoViewModel VideoModel { get; set; }
         public MainWindowViewModel()
         {
             this.ListItems = new ObservableCollection<TeslaCamDirectoryCollection>();
+            this.VideoModel = new VideoViewModel();
         }
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -138,7 +140,55 @@ namespace TeslaCamViewer
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
             }
         }
+
+        public void LoadFileSet(TeslaCamFileSet set)
+        {
+            this.VideoModel.LoadFileSet(set);
+            this.CurrentPlaybackFile = set;
+        }
     }
+
+    public class VideoViewModel
+    {
+        public MediaElement left;
+        public MediaElement right;
+        public MediaElement front;
+        public TabControl tabs;
+
+        public void LoadFileSet(TeslaCamFileSet set)
+        {
+            left.Stop();
+            right.Stop();
+            front.Stop();
+            bool playLeft = false;
+            bool playRight = false;
+            bool playFront = false;
+            foreach (var cam in set.Cameras)
+            {
+                if (cam.CameraLocation == TeslaCamFile.CameraType.FRONT)
+                {
+                    this.front.Source = new Uri(cam.FilePath);
+                    playFront = true;
+                }
+                if (cam.CameraLocation == TeslaCamFile.CameraType.LEFT_REPEATER)
+                {
+                    this.left.Source = new Uri(cam.FilePath);
+                    playLeft = true;
+                }
+                if (cam.CameraLocation == TeslaCamFile.CameraType.RIGHT_REPEATER)
+                {
+                    this.right.Source = new Uri(cam.FilePath);
+                    playRight = true;
+                }
+            }
+
+            if (playLeft) left.Play();
+            if (playRight) right.Play();
+            if (playFront) front.Play();
+            this.tabs.SelectedIndex = 1;
+        }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -151,10 +201,16 @@ namespace TeslaCamViewer
         public MainWindow()
         {
             this.model = new MainWindowViewModel();
+
             this.DataContext = model;
 
             this.model.LeftStatusText = "Ready";
             InitializeComponent();
+
+            model.VideoModel.left = this.left;
+            model.VideoModel.right = this.right;
+            model.VideoModel.front = this.front;
+            model.VideoModel.tabs = this.tabs;
         }
 
 
@@ -216,42 +272,10 @@ namespace TeslaCamViewer
                 if (treeview.SelectedItem is TeslaCamFileSet)
                 {
                     var set = treeview.SelectedItem as TeslaCamFileSet;
-                    LoadFileSet(set);
+                    model.LoadFileSet(set);
                 }
             }
 
-        }
-        private void LoadFileSet(TeslaCamFileSet set)
-        {
-            left.Stop();
-            right.Stop();
-            front.Stop();
-            bool playLeft = false;
-            bool playRight = false;
-            bool playFront = false;
-            foreach (var cam in set.Cameras)
-            {
-                if (cam.CameraLocation == TeslaCamFile.CameraType.FRONT)
-                {
-                    this.front.Source = new Uri(cam.FilePath);
-                    playFront = true;
-                }
-                if (cam.CameraLocation == TeslaCamFile.CameraType.LEFT_REPEATER)
-                {
-                    this.left.Source = new Uri(cam.FilePath);
-                    playLeft = true;
-                }
-                if (cam.CameraLocation == TeslaCamFile.CameraType.RIGHT_REPEATER)
-                {
-                    this.right.Source = new Uri(cam.FilePath);
-                    playRight = true;
-                }
-            }
-
-            if (playLeft) left.Play();
-            if (playRight) right.Play();
-            if (playFront) front.Play();
-            model.CurrentPlaybackFile = set;
         }
 
         private void Window_Drop(object sender, DragEventArgs e)
@@ -269,6 +293,7 @@ namespace TeslaCamViewer
                     c.BuildFromBaseDirectory(f);
                     this.model.ListItems.Add(c);
                     this.model.LeftStatusText = "Location: " + f;
+                    this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
                 }
             }
         }
@@ -329,6 +354,9 @@ namespace TeslaCamViewer
                     // Add clips to UI tree
                     if (recentClips != null) { this.model.ListItems.Add(recentClips); }
                     if (savedClips != null) { this.model.ListItems.Add(savedClips); }
+
+                    // Navigate
+                    this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
                 }
                 else
                 {
@@ -400,7 +428,7 @@ namespace TeslaCamViewer
 
         private void about_Menu_Click(object sender, RoutedEventArgs e)
         {
-            this.ShowMessageAsync("TeslaCam Viewer V0.2", "TeslaCam Viewer V0.2 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
+            this.ShowMessageAsync("TeslaCam Viewer V0.3", "TeslaCam Viewer V0.3 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
         }
 
         private void viewOnGitHub_Menu_Click(object sender, RoutedEventArgs e)
@@ -451,7 +479,7 @@ namespace TeslaCamViewer
                         {
                             TeslaCamFileSet nextSet = f.Recordings[currentFileIndex + 1];
 
-                            LoadFileSet(nextSet);
+                            model.LoadFileSet(nextSet);
                             var tvi = FindTviFromObjectRecursive(treeview, nextSet);
 
                             if (tvi != null)

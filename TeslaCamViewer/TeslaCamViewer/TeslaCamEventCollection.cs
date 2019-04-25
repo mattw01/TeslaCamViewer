@@ -15,6 +15,13 @@ namespace TeslaCamViewer
         public TeslaCamDate StartDate { get; private set; }
         public TeslaCamDate EndDate { get; private set; }
         public List<TeslaCamFileSet> Recordings { get; set; }
+        public TeslaCamFile ThumbnailVideo
+        {
+            get
+            {
+                return Recordings.First().ThumbnailVideo;
+            }
+        }
 
         public TeslaCamEventCollection()
         {

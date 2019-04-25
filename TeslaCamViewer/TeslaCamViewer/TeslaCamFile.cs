@@ -23,6 +23,7 @@ namespace TeslaCamViewer
         public TeslaCamDate Date { get; private set; }
         public CameraType CameraLocation { get; private set; }
         public string FileDirectory { get { return System.IO.Path.GetDirectoryName(FilePath); } }
+        public Uri FileURI { get { return new Uri(this.FilePath); } }
 
         public TeslaCamFile(string FilePath)
         {
