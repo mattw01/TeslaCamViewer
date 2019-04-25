@@ -28,26 +28,28 @@ namespace TeslaCamViewer
             this.Recordings = new List<TeslaCamFileSet>();
         }
 
-        public void BuildFromDirectory(string Directory)
+        public bool BuildFromDirectory(string Directory)
         {
-            // Get list of files
-            string[] Files = System.IO.Directory.GetFiles(Directory).OrderBy(x=>x).ToArray();
+            // Get list of raw files
+            string[] Files = System.IO.Directory.GetFiles(Directory, "*.mp4").OrderBy(x=>x).ToArray();
 
-            List<TeslaCamFile> CurrentTeslaCams = new List<TeslaCamFile>();
+            // Make sure there's at least one valid file
+            if (Files.Length < 1) { return false; }
 
+            // Create a list of cam files
+            List<TeslaCamFile> CurrentTeslaCams = new List<TeslaCamFile>(Files.Length);
+
+            // Convert raw file to cam file
             foreach (var File in Files)
             {
-                try
-                {
-                    TeslaCamFile f = new TeslaCamFile(File);
-                    CurrentTeslaCams.Add(f);
-                }
-                catch
-                {
-                }
+                TeslaCamFile f = new TeslaCamFile(File);
+                CurrentTeslaCams.Add(f);
             }
+
+            // Now get list of only distinct events
             List<string> DistinctEvents = CurrentTeslaCams.Select(e => e.Date.UTCDateString).Distinct().ToList();
 
+            // Find the files that match the distinct event
             foreach (var CurrentEvent in DistinctEvents)
             {
                 List<TeslaCamFile> MatchedFiles = CurrentTeslaCams.Where(e => e.Date.UTCDateString == CurrentEvent).ToList();
@@ -56,11 +58,14 @@ namespace TeslaCamViewer
                 CurrentFileSet.SetCollection(MatchedFiles);
                 this.Recordings.Add(CurrentFileSet);
             }
+
+            // Set metadata
             this.Recordings = Recordings.OrderBy(e => e.Date.UTCDateString).ToList();
             this.StartDate = Recordings.First().Date;
             this.EndDate = Recordings.Last().Date;
-            
-            
+
+            // Success
+            return true;
         }
     }
 }
