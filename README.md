@@ -15,4 +15,6 @@ A simple TeslaCam recording viewer to easily sort recordings and view all camera
 - F: Enter/Exit Fullscreen
 - Esc: Exit Fullscreen
 
-![TeslaCamViewerScreenshot](https://github.com/mattw01/TeslaCamViewer/blob/master/TeslaCamViewer/TeslaCamViewerScreenshot1.PNG?raw=true)
+![BrowseMenu](https://github.com/mattw01/TeslaCamViewer/blob/master/TeslaCamViewer/Screenshots/BrowseMenu1.PNG?raw=true)
+![BrowseScrubDemo](https://github.com/mattw01/TeslaCamViewer/blob/master/TeslaCamViewer/Screenshots/BrowseScrub1.gif?raw=true)
+![BrowseScrubDemo](https://github.com/mattw01/TeslaCamViewer/blob/master/TeslaCamViewer/Screenshots/PlayMenu1.PNG?raw=true)
