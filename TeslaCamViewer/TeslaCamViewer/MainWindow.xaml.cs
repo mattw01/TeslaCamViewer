@@ -297,75 +297,84 @@ namespace TeslaCamViewer
                 }
             }
         }
-        private void TeslaCamSearch()
+        private async Task TeslaCamSearchAsync()
         {
-            Task.Run(() =>
+            try
             {
-                try
-                {
-                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
-                         new Action(() =>
-                         { this.model.LeftStatusText = "Searching for TeslaCam ..."; }));
-                    var drives = System.IO.DriveInfo.GetDrives();
-                    bool driveFound = false;
-                    foreach (var drive in drives)
-                    {
-                        var rootDirs = drive.RootDirectory.GetDirectories();
-                        foreach (var dirs in rootDirs)
-                        {
-                            if (dirs.Name == "TeslaCam")
-                            {
-                                var RecentClipsDir = dirs.GetDirectories().FirstOrDefault(e => e.Name == "RecentClips");
-                                if (RecentClipsDir != null)
-                                {
-                                    TeslaCamDirectoryCollection c = new TeslaCamDirectoryCollection();
-                                    c.BuildFromBaseDirectory(RecentClipsDir.FullName);
-                                    c.SetDisplayName("Recent Clips");
-                                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
-                                       new Action(() => { this.model.ListItems.Add(c); }));
-                                    driveFound = true;
-                                }
-                                var SavedClipsDir = dirs.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
-                                if (SavedClipsDir != null)
-                                {
-                                    TeslaCamDirectoryCollection c = new TeslaCamDirectoryCollection();
-                                    c.BuildFromBaseDirectory(SavedClipsDir.FullName);
-                                    c.SetDisplayName("Saved Clips");
-                                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
-                                       new Action(() => { this.model.ListItems.Add(c); }));
-                                    driveFound = true;
-                                }
-                            }
-                            if (driveFound)
-                            {
-                                Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background,
-                                    new Action(() =>
-                                    { this.model.LeftStatusText = "Location: " + dirs.FullName;
-                                    this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
-                                    }));
+                // Update Status
+                this.model.LeftStatusText = "Searching for TeslaCam ...";
 
-                                return;
-                            }
+                // Placeholder variables used during and after worker task
+                DirectoryInfo teslaCamDir = null;
+                TeslaCamDirectoryCollection recentClips = null;
+                TeslaCamDirectoryCollection savedClips = null;
+
+                // Run the following in a worker thread and wait for it to finish
+                await Task.Run(() =>
+                {
+                    // Get all drives
+                    var drives = System.IO.DriveInfo.GetDrives();
+
+                    // Find the first drive containing a TeslaCam folder and select that folder
+                    teslaCamDir = (from drive in drives
+                              let dirs = drive.RootDirectory.GetDirectories()
+                              from dir in dirs
+                              where dir.Name == "TeslaCam"
+                              select dir).FirstOrDefault();
+
+                    // If root is found load Recent and Saved
+                    if (teslaCamDir != null)
+                    {
+                        // Get child dirs
+                        var recentClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "RecentClips");
+                        var savedClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
+
+                        // Load if found
+                        if (recentClipsDir != null)
+                        {
+                            recentClips = new TeslaCamDirectoryCollection();
+                            recentClips.BuildFromBaseDirectory(recentClipsDir.FullName);
+                            recentClips.SetDisplayName("Recent Clips");
+                        }
+                        if (savedClipsDir != null)
+                        {
+                            savedClips = new TeslaCamDirectoryCollection();
+                            savedClips.BuildFromBaseDirectory(savedClipsDir.FullName);
+                            savedClips.SetDisplayName("Saved Clips");
                         }
                     }
-                    Application.Current.Dispatcher.Invoke(DispatcherPriority.Background,
-                        new Action(() =>
-                        {
-                            this.model.LeftStatusText = "Ready";
-                            this.ShowMessageAsync("TeslaCam Drive Not Found", "A TeslaCam drive could not automatically be found. Drag a folder or file to start playing.");
-                        }));
+                });
 
-                }
-                catch (Exception ex)
+                // Do finial UI updating back on main thread
+                if (teslaCamDir != null)
                 {
+                    // Update status to show drive was found
+                    this.model.LeftStatusText = "Location: " + teslaCamDir.FullName;
+
+                    // Add clips to UI tree
+                    if (recentClips != null) { this.model.ListItems.Add(recentClips); }
+                    if (savedClips != null) { this.model.ListItems.Add(savedClips); }
+
+                    // Navigate
+                    this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
                 }
-            });
+                else
+                {
+                    // Update status to show that drive could not be found
+                    this.model.LeftStatusText = "Ready";
+                    await this.ShowMessageAsync("TeslaCam Drive Not Found", "A TeslaCam drive could not automatically be found. Drag a folder or file to start playing.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await this.ShowMessageAsync("Could not load TeslaCam Drive", $"An error ocurred: {ex.Message}");
+            }
         }
 
-        private void teslaCamSearch_Menu_Click(object sender, RoutedEventArgs e)
+        private async void teslaCamSearch_Menu_Click(object sender, RoutedEventArgs e)
         {
             this.model.ListItems.Clear();
-            TeslaCamSearch();
+            await TeslaCamSearchAsync();
         }
 
         private void playPause_Button_Click(object sender, RoutedEventArgs e)
@@ -409,10 +418,12 @@ namespace TeslaCamViewer
             }
         }
 
-        private void MetroWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void MetroWindow_Loaded(object sender, RoutedEventArgs e)
         {
             if (model.EnableAutoSearch)
-                this.TeslaCamSearch();
+            {
+                await this.TeslaCamSearchAsync();
+            }
         }
 
         private void about_Menu_Click(object sender, RoutedEventArgs e)
