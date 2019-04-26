@@ -13,6 +13,7 @@ namespace TeslaCamViewer
     {
         public enum CameraType
         {
+            UNKNOWN,
             LEFT_REPEATER,
             FRONT,
             RIGHT_REPEATER

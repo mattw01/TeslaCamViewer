@@ -72,6 +72,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DelegateCommand.cs" />
+    <Compile Include="MainWindowViewModel.cs" />
     <Compile Include="TeslaCamDate.cs" />
     <Compile Include="TeslaCamDirectoryCollection.cs" />
     <Compile Include="TeslaCamEventCollection.cs" />

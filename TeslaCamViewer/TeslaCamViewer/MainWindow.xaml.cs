@@ -22,132 +22,6 @@ using System.Runtime.CompilerServices;
 
 namespace TeslaCamViewer
 {
-
-    public class MainWindowViewModel : INotifyPropertyChanged
-    {
-        public ObservableCollection<TeslaCamDirectoryCollection> ListItems { get; set; }
-        public TeslaCamFileSet CurrentPlaybackFile { get; set; }
-
-        private double _DisplayPlaybackSpeed;
-        public double DisplayPlaybackSpeed
-        {
-            get
-            {
-                return this._DisplayPlaybackSpeed;
-            }
-            set
-            {
-                if (value != this._DisplayPlaybackSpeed)
-                {
-                    this._DisplayPlaybackSpeed = value;
-                    NotifyPropertyChanged();
-                    NotifyPropertyChanged("CalculatedPlaybackSpeed");
-                }
-            }
-        }
-        public double CalculatedPlaybackSpeed
-        {
-            get
-            {
-                if (DisplayPlaybackSpeed < 0)
-                {
-                    double calculatedMin = 0.25;
-                    double calculatedMax = 1.00;
-                    double displayMin = -50;
-                    double displayMax = 0;
-
-                    double calc = (calculatedMax - calculatedMin) / (displayMax - displayMin) * (DisplayPlaybackSpeed - displayMax) + calculatedMax;
-                    return calc;
-                }
-                else
-                    return this.DisplayPlaybackSpeed + 1.0;
-            }
-            set
-            {
-            }
-        }
-
-        private string _LeftStatusText;
-        public string LeftStatusText
-        {
-            get
-            {
-                return this._LeftStatusText;
-            }
-
-            set
-            {
-                if (value != this._LeftStatusText)
-                {
-                    this._LeftStatusText = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-        private string _RightStatusText;
-        public string RightStatusText
-        {
-            get
-            {
-                return this._RightStatusText;
-            }
-
-            set
-            {
-                if (value != this._RightStatusText)
-                {
-                    this._RightStatusText = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-        public bool EnableAutoSearch
-        {
-            get
-            {
-                return Properties.Settings.Default.EnableAutoSearch;
-            }
-            set
-            {
-                Properties.Settings.Default.EnableAutoSearch = value;
-                Properties.Settings.Default.Save();
-            }
-        }
-        public bool EnableAutoPlaylist
-        {
-            get
-            {
-                return Properties.Settings.Default.EnableAutoPlaylist;
-            }
-            set
-            {
-                Properties.Settings.Default.EnableAutoPlaylist = value;
-                Properties.Settings.Default.Save();
-            }
-        }
-        public VideoViewModel VideoModel { get; set; }
-        public MainWindowViewModel()
-        {
-            this.ListItems = new ObservableCollection<TeslaCamDirectoryCollection>();
-            this.VideoModel = new VideoViewModel();
-        }
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-            }
-        }
-
-        public void LoadFileSet(TeslaCamFileSet set)
-        {
-            this.VideoModel.LoadFileSet(set);
-            this.CurrentPlaybackFile = set;
-        }
-    }
-
     public class VideoViewModel
     {
         public MediaElement left;
@@ -367,7 +241,7 @@ namespace TeslaCamViewer
             }
             catch (Exception ex)
             {
-                await this.ShowMessageAsync("Could not load TeslaCam Drive", $"An error ocurred: {ex.Message}");
+                this.ShowMessageAsync("Could not load TeslaCam Drive", "An error ocurred: " + ex.Message).Wait();
             }
         }
 
@@ -428,7 +302,7 @@ namespace TeslaCamViewer
 
         private void about_Menu_Click(object sender, RoutedEventArgs e)
         {
-            this.ShowMessageAsync("TeslaCam Viewer V0.3", "TeslaCam Viewer V0.3 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
+            this.ShowMessageAsync("TeslaCam Viewer V0.4", "TeslaCam Viewer V0.4 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
         }
 
         private void viewOnGitHub_Menu_Click(object sender, RoutedEventArgs e)
