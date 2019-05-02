@@ -188,6 +188,9 @@ namespace TeslaCamViewer
                 {
                     // Get all drives
                     var drives = System.IO.DriveInfo.GetDrives();
+                    drives = drives.Where(e => e.DriveType == DriveType.Removable ||
+                        e.DriveType == DriveType.Network ||
+                        e.DriveType == DriveType.Fixed).ToArray();
 
                     // Find the first drive containing a TeslaCam folder and select that folder
                     teslaCamDir = (from drive in drives
@@ -302,7 +305,7 @@ namespace TeslaCamViewer
 
         private void about_Menu_Click(object sender, RoutedEventArgs e)
         {
-            this.ShowMessageAsync("TeslaCam Viewer V0.4", "TeslaCam Viewer V0.4 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
+            this.ShowMessageAsync("TeslaCam Viewer V0.4.1", "TeslaCam Viewer V0.4.1 Copyright 2019 mattw\n\nSee LICENCES.txt for more information.");
         }
 
         private void viewOnGitHub_Menu_Click(object sender, RoutedEventArgs e)

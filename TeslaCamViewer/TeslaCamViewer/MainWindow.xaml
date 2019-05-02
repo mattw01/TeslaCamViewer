@@ -6,7 +6,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:local="clr-namespace:TeslaCamViewer"
         mc:Ignorable="d"           
-        Title="TeslaCam Viewer V0.4" TitleCaps="False" Height="525" Width="817"
+        Title="TeslaCam Viewer V0.4.1" TitleCaps="False" Height="525" Width="817"
                         AllowDrop="True"  Drop="Window_Drop" KeyUp="MetroWindow_KeyUp"
                       Loaded="MetroWindow_Loaded">
     <Grid>
