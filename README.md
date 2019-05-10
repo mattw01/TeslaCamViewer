@@ -2,7 +2,7 @@
 # TeslaCam Viewer
 A simple TeslaCam recording viewer to easily sort recordings and view all cameras at once.
 
-### [Download the Current Release Version](https://github.com/mattw01/TeslaCamViewer/releases/download/v0.3/TeslaCamViewer_V0.3.zip)
+### [Download the Current Release Version](https://github.com/mattw01/TeslaCamViewer/releases/download/v0.4.1/TeslaCamViewer_V0.4.1.zip)
 
 ## Features
 - View and sync all 3 cameras at once

@@ -29,14 +29,10 @@ namespace TeslaCamViewer
             string[] Directories = System.IO.Directory.GetDirectories(Directory);
             foreach (var Dir in Directories)
             {
-                try
+                var e = new TeslaCamEventCollection();
+                if (e.BuildFromDirectory(Dir))
                 {
-                    var e = new TeslaCamEventCollection();
-                    e.BuildFromDirectory(Dir);
                     this.Events.Add(e);
-                }
-                catch
-                {
                 }
             }
             string[] BaseFiles = System.IO.Directory.GetFiles(Directory);
