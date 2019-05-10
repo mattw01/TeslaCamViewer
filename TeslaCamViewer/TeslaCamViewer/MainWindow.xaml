@@ -11,11 +11,12 @@
                       Loaded="MetroWindow_Loaded">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition x:Name="MenuRow" Height="Auto"/>
+            <RowDefinition x:Name="LoadingRow" Height="Auto"/>
+            <RowDefinition x:Name="MainRow"/>
+            <RowDefinition x:Name="StatusRow" Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Grid x:Name="MenuLayout" Grid.Row="0">
             <Menu>
                 <MenuItem Header="_File">
                     <MenuItem Header="_Search For TeslaCam Drive" x:Name="teslaCamSearch_Menu" Click="teslaCamSearch_Menu_Click"/>
@@ -39,7 +40,16 @@
                 </MenuItem>
             </Menu>
         </Grid>
-        <Grid Grid.Row="1">
+        <Grid x:Name="LoadingLayout" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="150" />
+            </Grid.ColumnDefinitions>
+            <ProgressBar x:Name="LoadingProgress" Grid.Column="0" Margin="10,0" />
+            <TextBlock Text="Loading..." Grid.Column="0" Width="100" Height="15" />
+            <Button x:Name="LoadCancelButton" Content="Cancel" Grid.Column="1" Margin="0,0,10,0" Click="LoadCancelButton_Click" />
+        </Grid>
+        <Grid x:Name="MainLayout" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="33*" MinWidth="15"/>
                 <ColumnDefinition Width="Auto"/>
@@ -153,7 +163,7 @@
             </TabControl>
 
         </Grid>
-        <StatusBar Height="25" Grid.Row="2">
+        <StatusBar Height="25" Grid.Row="3">
             <StatusBarItem Content="{Binding LeftStatusText}"/>
 
             <StatusBarItem DockPanel.Dock="Right" Content="{Binding RightStatusText}"/>

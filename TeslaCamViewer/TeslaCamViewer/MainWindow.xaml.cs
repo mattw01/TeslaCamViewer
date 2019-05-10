@@ -19,6 +19,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace TeslaCamViewer
 {
@@ -68,10 +69,17 @@ namespace TeslaCamViewer
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
+        #region Member Variables
+        private CancellationTokenSource loadingCancellation;
         private MainWindowViewModel model;
         private TimeSpan TotalTime;
         private bool paused;
+        #endregion // Member Variables
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new <see cref="MainWindow"/> instance.
+        /// </summary>
         public MainWindow()
         {
             this.model = new MainWindowViewModel();
@@ -86,95 +94,83 @@ namespace TeslaCamViewer
             model.VideoModel.front = this.front;
             model.VideoModel.tabs = this.tabs;
         }
+        #endregion // Constructors
 
+        #region Internal Methods
+        /// <summary>
+        /// Finds the TeslaCam Directory on any given drive.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> that can be used to cancel the operation.
+        /// </param>
+        /// <returns>
+        /// The <see cref="DirectoryInfo"/> if the TeslaCam directory was found; otherwise 
+        /// <see langword = "null" />.
+        /// </returns>
+        private async Task<DirectoryInfo> FindCamDirAsync(CancellationToken cancellationToken)
+        {
+            // Placeholder
+            DirectoryInfo teslaCamDir = null;
 
-        private void MediaElement_MediaOpened(object sender, RoutedEventArgs e)
-        {
-            TotalTime = left.NaturalDuration.TimeSpan;
-            var timerVideoTime = new DispatcherTimer();
-            timerVideoTime.Interval = TimeSpan.FromMilliseconds(100);
-            timerVideoTime.Tick += new EventHandler(timer_Tick);
-            timerVideoTime.Start();
-        }
+            // Get all drives
+            var drives = System.IO.DriveInfo.GetDrives();
+            drives = drives.Where(e => e.DriveType == DriveType.Removable ||
+                e.DriveType == DriveType.Network ||
+                e.DriveType == DriveType.Fixed).ToArray();
 
-        void timer_Tick(object sender, EventArgs e)
-        {
-            if (left.NaturalDuration.HasTimeSpan)
-                if (left.NaturalDuration.TimeSpan.TotalSeconds > 0)
-                    if (TotalTime.TotalSeconds > 0)
-                    {
-                        model.RightStatusText = left.Position.ToString(@"mm\:ss") + " / " + TotalTime.ToString(@"mm\:ss");
-                        timeSlider.Value = left.Position.TotalSeconds / TotalTime.TotalSeconds;
-                    }
-        }
-        private void SetPosition()
-        {
-            if (TotalTime.TotalSeconds > 0)
+            // Enumerate all drives looking for the TeslaCam folder
+            foreach (var drive in drives)
             {
-                left.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
-                right.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
-                front.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
-            }
-        }
+                await Task.Delay(10, cancellationToken);
 
-        private void timeSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
-        {
-            left.Pause();
-            right.Pause();
-            front.Pause();
-        }
+                // Check for cancellation
+                cancellationToken.ThrowIfCancellationRequested();
 
-        private void timeSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
-        {
-            left.Play();
-            right.Play();
-            front.Play();
-        }
+                // Get directories on the drive
+                teslaCamDir = drive.RootDirectory.GetDirectories("TeslaCam").FirstOrDefault();
 
-        private void timeSlider_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
-        {
-            this.SetPosition();
-        }
-        private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
-        {
-            if (sender is TreeViewItem)
-            {
-                if (!((TreeViewItem)sender).IsSelected)
-                {
-                    return;
-                }
-                if (treeview.SelectedItem is TeslaCamFileSet)
-                {
-                    var set = treeview.SelectedItem as TeslaCamFileSet;
-                    model.LoadFileSet(set);
-                }
+                // If found, no need to keep searching
+                if (teslaCamDir != null) { break; }
             }
 
+            // return placeholder
+            return teslaCamDir;
         }
 
-        private void Window_Drop(object sender, DragEventArgs e)
+        public static TreeViewItem FindTviFromObjectRecursive(ItemsControl ic, object o)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(o) as TreeViewItem;
+            if (tvi != null) return tvi;
+            foreach (object i in ic.Items)
             {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                var f = files[0];
-                FileAttributes attr = File.GetAttributes(f);
-
-                if (attr.HasFlag(FileAttributes.Directory))
-                {
-                    this.model.ListItems.Clear();
-                    var c = new TeslaCamDirectoryCollection();
-                    c.BuildFromBaseDirectory(f);
-                    this.model.ListItems.Add(c);
-                    this.model.LeftStatusText = "Location: " + f;
-                    this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
-                }
+                TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
+                tvi = FindTviFromObjectRecursive(tvi2, o);
+                if (tvi != null) return tvi;
             }
+            return null;
         }
-        private async Task TeslaCamSearchAsync()
+
+        /// <summary>
+        /// Searches for the TeslaCam folder and if found, populates the UI.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> that can be used to cancel the operation.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the operation.
+        /// </returns>
+        /// <remarks>
+        /// This version of the method can be run multiple times in parallel because 
+        /// it does not share a cancellation token.
+        /// </remarks>
+        private async Task TeslaCamSearchAsync(CancellationToken cancellationToken)
         {
             try
             {
+                // Show loading
+                LoadingProgress.IsIndeterminate = true;
+                LoadingLayout.Visibility = Visibility.Visible;
+
                 // Update Status
                 this.model.LeftStatusText = "Searching for TeslaCam ...";
 
@@ -184,20 +180,10 @@ namespace TeslaCamViewer
                 TeslaCamDirectoryCollection savedClips = null;
 
                 // Run the following in a worker thread and wait for it to finish
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
-                    // Get all drives
-                    var drives = System.IO.DriveInfo.GetDrives();
-                    drives = drives.Where(e => e.DriveType == DriveType.Removable ||
-                        e.DriveType == DriveType.Network ||
-                        e.DriveType == DriveType.Fixed).ToArray();
-
-                    // Find the first drive containing a TeslaCam folder and select that folder
-                    teslaCamDir = (from drive in drives
-                              let dirs = drive.RootDirectory.GetDirectories()
-                              from dir in dirs
-                              where dir.Name == "TeslaCam"
-                              select dir).FirstOrDefault();
+                    // Find the TeslaCam directory
+                    teslaCamDir = await FindCamDirAsync(cancellationToken);
 
                     // If root is found load Recent and Saved
                     if (teslaCamDir != null)
@@ -207,12 +193,14 @@ namespace TeslaCamViewer
                         var savedClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
 
                         // Load if found
+                        cancellationToken.ThrowIfCancellationRequested();
                         if (recentClipsDir != null)
                         {
                             recentClips = new TeslaCamDirectoryCollection();
                             recentClips.BuildFromBaseDirectory(recentClipsDir.FullName);
                             recentClips.SetDisplayName("Recent Clips");
                         }
+                        cancellationToken.ThrowIfCancellationRequested();
                         if (savedClipsDir != null)
                         {
                             savedClips = new TeslaCamDirectoryCollection();
@@ -220,7 +208,7 @@ namespace TeslaCamViewer
                             savedClips.SetDisplayName("Saved Clips");
                         }
                     }
-                });
+                }, cancellationToken);
 
                 // Do finial UI updating back on main thread
                 if (teslaCamDir != null)
@@ -242,9 +230,158 @@ namespace TeslaCamViewer
                     await this.ShowMessageAsync("TeslaCam Drive Not Found", "A TeslaCam drive could not automatically be found. Drag a folder or file to start playing.");
                 }
             }
+            catch (TaskCanceledException)
+            {
+                // Update status to show that drive could not be found
+                this.model.LeftStatusText = "Ready";
+                await this.ShowMessageAsync("Canceled", "Loading canceled.");
+            }
             catch (Exception ex)
             {
                 this.ShowMessageAsync("Could not load TeslaCam Drive", "An error ocurred: " + ex.Message).Wait();
+            }
+            finally
+            {
+                // Hide loading
+                LoadingProgress.IsIndeterminate = false;
+                LoadingLayout.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void SetFullscreen(bool Enable)
+        {
+            if (Enable)
+            {
+                this.SetCurrentValue(IgnoreTaskbarOnMaximizeProperty, true);
+                this.SetCurrentValue(WindowStateProperty, WindowState.Maximized);
+                this.SetCurrentValue(UseNoneWindowStyleProperty, true);
+            }
+            else
+            {
+                this.SetCurrentValue(WindowStateProperty, WindowState.Normal);
+                this.SetCurrentValue(UseNoneWindowStyleProperty, false);
+                this.SetCurrentValue(ShowTitleBarProperty, true);
+                this.SetCurrentValue(IgnoreTaskbarOnMaximizeProperty, false);
+            }
+        }
+
+        private void SetPosition()
+        {
+            if (TotalTime.TotalSeconds > 0)
+            {
+                left.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
+                right.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
+                front.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
+            }
+        }
+
+        private void ShowWelcomeMessage()
+        {
+            this.ShowMessageAsync("Welcome to TeslaCam Viewer!", "Getting Started:\n\nBrowse TeslaCam media in the left pane. " +
+                "TeslaCam drive will automatically be detected on startup, or drag a folder containing TeslaCam data anywhere onto the window. " +
+                "Double click event in TeslaCam Files pane to start playing.");
+        }
+        
+        /// <summary>
+        /// Searches for the TeslaCam folder and if found, populates the UI.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the operation.
+        /// </returns>
+        /// <remarks>
+        /// This version of the method can only be run once at a time because it shares 
+        /// a class-level cancellation token (which is tied to the LoadingCancel button).
+        /// </remarks>
+        private async Task TeslaCamSearchAsync()
+        {
+            // Don't start another search if one is already running
+            if (loadingCancellation != null) { return; }
+
+            // Create a new cancellation source
+            loadingCancellation = new CancellationTokenSource();
+
+            // Run the other version, providing the cancellation source
+            await TeslaCamSearchAsync(loadingCancellation.Token);
+
+            // Now that we're done, delete the cancellation source
+            loadingCancellation = null;
+        }
+        #endregion // Internal Methods
+
+
+        #region Event Handlers
+        private void MediaElement_MediaOpened(object sender, RoutedEventArgs e)
+        {
+            TotalTime = left.NaturalDuration.TimeSpan;
+            var timerVideoTime = new DispatcherTimer();
+            timerVideoTime.Interval = TimeSpan.FromMilliseconds(100);
+            timerVideoTime.Tick += new EventHandler(timer_Tick);
+            timerVideoTime.Start();
+        }
+
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            if (left.NaturalDuration.HasTimeSpan)
+                if (left.NaturalDuration.TimeSpan.TotalSeconds > 0)
+                    if (TotalTime.TotalSeconds > 0)
+                    {
+                        model.RightStatusText = left.Position.ToString(@"mm\:ss") + " / " + TotalTime.ToString(@"mm\:ss");
+                        timeSlider.Value = left.Position.TotalSeconds / TotalTime.TotalSeconds;
+                    }
+        }
+
+        private void timeSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+        {
+            left.Pause();
+            right.Pause();
+            front.Pause();
+        }
+
+        private void timeSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            left.Play();
+            right.Play();
+            front.Play();
+        }
+
+        private void timeSlider_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+        {
+            this.SetPosition();
+        }
+
+        private void OnItemMouseDoubleClick(object sender, MouseButtonEventArgs args)
+        {
+            if (sender is TreeViewItem)
+            {
+                if (!((TreeViewItem)sender).IsSelected)
+                {
+                    return;
+                }
+                if (treeview.SelectedItem is TeslaCamFileSet)
+                {
+                    var set = treeview.SelectedItem as TeslaCamFileSet;
+                    model.LoadFileSet(set);
+                }
+            }
+        }
+
+        private void Window_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                var f = files[0];
+                FileAttributes attr = File.GetAttributes(f);
+
+                if (attr.HasFlag(FileAttributes.Directory))
+                {
+                    this.model.ListItems.Clear();
+                    var c = new TeslaCamDirectoryCollection();
+                    c.BuildFromBaseDirectory(f);
+                    this.model.ListItems.Add(c);
+                    this.model.LeftStatusText = "Location: " + f;
+                    this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
+                }
             }
         }
 
@@ -313,32 +450,9 @@ namespace TeslaCamViewer
             System.Diagnostics.Process.Start("https://github.com/mattw01/TeslaCamViewer/");
         }
 
-        private void SetFullscreen(bool Enable)
-        {
-            if (Enable)
-            {
-                this.SetCurrentValue(IgnoreTaskbarOnMaximizeProperty, true);
-                this.SetCurrentValue(WindowStateProperty, WindowState.Maximized);
-                this.SetCurrentValue(UseNoneWindowStyleProperty, true);
-            }
-            else
-            {
-                this.SetCurrentValue(WindowStateProperty, WindowState.Normal);
-                this.SetCurrentValue(UseNoneWindowStyleProperty, false);
-                this.SetCurrentValue(ShowTitleBarProperty, true);
-                this.SetCurrentValue(IgnoreTaskbarOnMaximizeProperty, false);
-            }
-        }
-
         private void fullscreen_Menu_Click(object sender, RoutedEventArgs e)
         {
             SetFullscreen(fullscreen_Menu.IsChecked);
-        }
-        private void ShowWelcomeMessage()
-        {
-            this.ShowMessageAsync("Welcome to TeslaCam Viewer!", "Getting Started:\n\nBrowse TeslaCam media in the left pane. " +
-                "TeslaCam drive will automatically be detected on startup, or drag a folder containing TeslaCam data anywhere onto the window. " +
-                "Double click event in TeslaCam Files pane to start playing.");
         }
 
         private void left_MediaEnded(object sender, RoutedEventArgs e)
@@ -369,18 +483,6 @@ namespace TeslaCamViewer
             }
             catch { }
         }
-        public static TreeViewItem FindTviFromObjectRecursive(ItemsControl ic, object o)
-        {
-            TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(o) as TreeViewItem;
-            if (tvi != null) return tvi;
-            foreach (object i in ic.Items)
-            {
-                TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
-                tvi = FindTviFromObjectRecursive(tvi2, o);
-                if (tvi != null) return tvi;
-            }
-            return null;
-        }
 
         private void playbackSpeed_Slider_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
         {
@@ -388,5 +490,14 @@ namespace TeslaCamViewer
             this.right.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.front.SpeedRatio = model.CalculatedPlaybackSpeed;
         }
+
+        private void LoadCancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (loadingCancellation != null)
+            {
+                loadingCancellation.Cancel();
+            }
+        }
+        #endregion // Event Handlers
     }
 }
