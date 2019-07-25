@@ -18,7 +18,7 @@ namespace TeslaCamViewer
             FRONT,
             RIGHT_REPEATER
         }
-        private readonly string FileNameRegex = "([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2})-([a-z_]*).mp4";
+        private readonly string FileNameRegex = "([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}(-[0-9]{2})?)-([a-z_]*).mp4";
         public string FilePath { get; private set; }
         public string FileName { get { return System.IO.Path.GetFileName(FilePath); } }
         public TeslaCamDate Date { get; private set; }
@@ -33,7 +33,8 @@ namespace TeslaCamViewer
             if (m.Count != 1)
                 throw new Exception("Invalid TeslaCamFile '" + FileName + "'");
             this.Date = new TeslaCamDate(m[0].Groups[1].Value);
-            string cameraType = m[0].Groups[2].Value;
+            int cameraTypeIndex = m[0].Groups.Count - 1;
+            string cameraType = m[0].Groups[cameraTypeIndex].Value;
             if (cameraType == "front")
                 CameraLocation = CameraType.FRONT;
             else if (cameraType == "left_repeater")

@@ -9,7 +9,8 @@ namespace TeslaCamViewer
 {
     public class TeslaCamDate
     {
-        private const string FileFormat = "yyyy-MM-dd_HH-mm";
+        private const string FileFormatNoSeconds = "yyyy-MM-dd_HH-mm";
+        private const string FileFormatWithSeconds = "yyyy-MM-dd_HH-mm-ss";
         private const string DisplayFormat = "M/d/yyyy h:mm tt";
 
         public string UTCDateString { get; private set; }
@@ -25,23 +26,16 @@ namespace TeslaCamViewer
         {
             get
             {
-
                 DateTime dt;
-                if (DateTime.TryParseExact(UTCDateString, FileFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
-                {
-                    return dt;
-                }
-                else
-                {
-                    throw new Exception("Invalid date format: " + UTCDateString);
-                }
+                if (DateTime.TryParseExact(UTCDateString, FileFormatNoSeconds, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt)) return dt;
+                if (DateTime.TryParseExact(UTCDateString, FileFormatWithSeconds, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt)) return dt;
+                throw new Exception("Invalid date format: " + UTCDateString);
             }
         }
         public DateTime LocalTimeStamp
         {
             get
             {
-
                 return UTCTimeStamp;
             }
         }
