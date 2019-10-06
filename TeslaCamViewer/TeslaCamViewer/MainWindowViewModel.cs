@@ -85,6 +85,39 @@ namespace TeslaCamViewer
             }
         }
 
+        private GridLength _LeftTopVideoColumnWidth;
+        public GridLength LeftTopVideoColumnWidth
+        {
+            get
+            {
+                return this._LeftTopVideoColumnWidth;
+            }
+            set
+            {
+                if (value != this._LeftTopVideoColumnWidth)
+                {
+                    this._LeftTopVideoColumnWidth = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+        private GridLength _RightTopVideoColumnWidth;
+        public GridLength RightTopVideoColumnWidth
+        {
+            get
+            {
+                return this._RightTopVideoColumnWidth;
+            }
+            set
+            {
+                if (value != this._RightTopVideoColumnWidth)
+                {
+                    this._RightTopVideoColumnWidth = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+
         private double _DisplayPlaybackSpeed;
         public double DisplayPlaybackSpeed
         {
@@ -212,6 +245,8 @@ namespace TeslaCamViewer
                     {
                         this.BottomVideoRowHeight = new GridLength(0);
                         this.TopVideoRowHeight = new GridLength(1, GridUnitType.Star);
+                        this.RightTopVideoColumnWidth = new GridLength(0);
+                        this.LeftTopVideoColumnWidth = new GridLength(1, GridUnitType.Star);
                     }
                     if (cam == TeslaCamFile.CameraType.LEFT_REPEATER)
                     {
@@ -226,6 +261,13 @@ namespace TeslaCamViewer
                         this.BottomVideoRowHeight = new GridLength(1, GridUnitType.Star);
                         this.RightVideoColumnWidth = new GridLength(1, GridUnitType.Star);
                         this.LeftVideoColumnWidth = new GridLength(0);
+                    }
+                    if ( cam == TeslaCamFile.CameraType.BACK)
+                    {
+                        this.BottomVideoRowHeight = new GridLength(0);
+                        this.TopVideoRowHeight = new GridLength(1, GridUnitType.Star);
+                        this.RightTopVideoColumnWidth = new GridLength(1, GridUnitType.Star);
+                        this.LeftTopVideoColumnWidth = new GridLength(0);
                     }
                     CurrentFullVideo = cam;
                 }
@@ -242,11 +284,31 @@ namespace TeslaCamViewer
             this.BottomVideoRowHeight = new GridLength(1, GridUnitType.Star);
             this.LeftVideoColumnWidth = new GridLength(1, GridUnitType.Star);
             this.RightVideoColumnWidth = new GridLength(1, GridUnitType.Star);
+            this.RightTopVideoColumnWidth = new GridLength(1, GridUnitType.Star);
+            this.LeftTopVideoColumnWidth = new GridLength(1, GridUnitType.Star);
+            if ( this.CurrentPlaybackFile != null && !this.CurrentPlaybackFile.HasBackCamera)
+            {
+                ZoomFront();
+            }
+        }
+
+        private void ZoomFront()
+        {
+            this.RightTopVideoColumnWidth = new GridLength(0);
+            this.LeftTopVideoColumnWidth = new GridLength(1, GridUnitType.Star);
         }
         public void LoadFileSet(TeslaCamFileSet set)
         {
             this.VideoModel.LoadFileSet(set);
             this.CurrentPlaybackFile = set;
+            if (! set.HasBackCamera)
+            {
+                ZoomFront();
+            }
+            else
+            {
+                ResetVideoDisplay();
+            }
         }
     }
 }

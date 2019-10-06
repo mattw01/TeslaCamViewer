@@ -16,7 +16,11 @@ namespace TeslaCamViewer
     {
         public TeslaCamDate Date { get; private set; }
         public List<TeslaCamFile> Cameras { get; private set; }
-
+        public bool HasBackCamera
+        {
+            get { return this.Cameras.Find(c => c.CameraLocation == TeslaCamFile.CameraType.BACK) != null; }
+        }
+        
         public TeslaCamFile ThumbnailVideo
         {
             get
