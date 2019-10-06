@@ -27,6 +27,7 @@ namespace TeslaCamViewer
         public MediaElement left;
         public MediaElement right;
         public MediaElement front;
+        public MediaElement back;
         public TabControl tabs;
 
         public void LoadFileSet(TeslaCamFileSet set)
@@ -34,9 +35,11 @@ namespace TeslaCamViewer
             left.Stop();
             right.Stop();
             front.Stop();
+            back.Stop();
             bool playLeft = false;
             bool playRight = false;
             bool playFront = false;
+            bool playBack = false;
             foreach (var cam in set.Cameras)
             {
                 if (cam.CameraLocation == TeslaCamFile.CameraType.FRONT)
@@ -54,11 +57,17 @@ namespace TeslaCamViewer
                     this.right.Source = new Uri(cam.FilePath);
                     playRight = true;
                 }
+                if (cam.CameraLocation == TeslaCamFile.CameraType.BACK)
+                {
+                    this.back.Source = new Uri(cam.FilePath);
+                    playBack = true;
+                }
             }
 
             if (playLeft) left.Play();
             if (playRight) right.Play();
             if (playFront) front.Play();
+            if (playBack) back.Play();
             this.tabs.SelectedIndex = 1;
         }
     }
@@ -84,6 +93,7 @@ namespace TeslaCamViewer
             model.VideoModel.left = this.left;
             model.VideoModel.right = this.right;
             model.VideoModel.front = this.front;
+            model.VideoModel.back = this.back;
             model.VideoModel.tabs = this.tabs;
         }
 
@@ -114,6 +124,7 @@ namespace TeslaCamViewer
                 left.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
                 right.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
                 front.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
+                back.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
             }
         }
 
@@ -122,6 +133,7 @@ namespace TeslaCamViewer
             left.Pause();
             right.Pause();
             front.Pause();
+            back.Pause();
         }
 
         private void timeSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
@@ -129,6 +141,7 @@ namespace TeslaCamViewer
             left.Play();
             right.Play();
             front.Play();
+            back.Play();
         }
 
         private void timeSlider_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
@@ -182,6 +195,7 @@ namespace TeslaCamViewer
                 DirectoryInfo teslaCamDir = null;
                 TeslaCamDirectoryCollection recentClips = null;
                 TeslaCamDirectoryCollection savedClips = null;
+                TeslaCamDirectoryCollection sentryClips = null;
 
                 // Run the following in a worker thread and wait for it to finish
                 await Task.Run(() =>
@@ -194,10 +208,10 @@ namespace TeslaCamViewer
 
                     // Find the first drive containing a TeslaCam folder and select that folder
                     teslaCamDir = (from drive in drives
-                              let dirs = drive.RootDirectory.GetDirectories()
-                              from dir in dirs
-                              where dir.Name == "TeslaCam"
-                              select dir).FirstOrDefault();
+                                   let dirs = drive.RootDirectory.GetDirectories()
+                                   from dir in dirs
+                                   where dir.Name == "TeslaCam"
+                                   select dir).FirstOrDefault();
 
                     // If root is found load Recent and Saved
                     if (teslaCamDir != null)
@@ -205,6 +219,7 @@ namespace TeslaCamViewer
                         // Get child dirs
                         var recentClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "RecentClips");
                         var savedClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
+                        var sentryClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "SentryClips");
 
                         // Load if found
                         if (recentClipsDir != null)
@@ -219,6 +234,13 @@ namespace TeslaCamViewer
                             savedClips.BuildFromBaseDirectory(savedClipsDir.FullName);
                             savedClips.SetDisplayName("Saved Clips");
                         }
+                        if (sentryClipsDir != null)
+                        {
+                            sentryClips = new TeslaCamDirectoryCollection();
+                            sentryClips.BuildFromBaseDirectory(sentryClipsDir.FullName);
+                            sentryClips.SetDisplayName("Sentry Clips");
+                        }
+
                     }
                 });
 
@@ -231,6 +253,7 @@ namespace TeslaCamViewer
                     // Add clips to UI tree
                     if (recentClips != null) { this.model.ListItems.Add(recentClips); }
                     if (savedClips != null) { this.model.ListItems.Add(savedClips); }
+                    if ( sentryClips != null) { this.model.ListItems.Add(sentryClips); }
 
                     // Navigate
                     this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
@@ -261,12 +284,14 @@ namespace TeslaCamViewer
                 left.Play();
                 right.Play();
                 front.Play();
+                back.Play();
             }
             else
             {
                 left.Pause();
                 right.Pause();
                 front.Pause();
+                back.Pause();
             }
             paused = !paused;
         }
@@ -387,6 +412,7 @@ namespace TeslaCamViewer
             this.left.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.right.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.front.SpeedRatio = model.CalculatedPlaybackSpeed;
+            this.back.SpeedRatio = model.CalculatedPlaybackSpeed;
         }
     }
 }
