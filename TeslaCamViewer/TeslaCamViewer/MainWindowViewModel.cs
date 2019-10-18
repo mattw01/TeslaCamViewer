@@ -1,20 +1,14 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Collections.ObjectModel;
-using System;
+﻿
 
 namespace TeslaCamViewer
 {
+    using System;
+    using System.Collections.ObjectModel;
+    using System.ComponentModel;
+    using System.Runtime.CompilerServices;
+    using System.Windows;
+    using System.Windows.Input;
+
     public class MainWindowViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<TeslaCamDirectoryCollection> ListItems { get; set; }
@@ -106,18 +100,19 @@ namespace TeslaCamViewer
         {
             get
             {
+                double calculatedMax = 1.00;
+
                 if (DisplayPlaybackSpeed < 0)
                 {
                     double calculatedMin = 0.25;
-                    double calculatedMax = 1.00;
-                    double displayMin = -50;
+                    double displayMin = -20;
                     double displayMax = 0;
 
-                    double calc = (calculatedMax - calculatedMin) / (displayMax - displayMin) * (DisplayPlaybackSpeed - displayMax) + calculatedMax;
-                    return calc;
+                    double calc = calculatedMax - (calculatedMax - calculatedMin) / (displayMax - displayMin) * (displayMax - this.DisplayPlaybackSpeed);
+                    return Math.Round(Math.Floor(calc * 20.0) / 20, 2);
                 }
                 else
-                    return this.DisplayPlaybackSpeed + 1.0;
+                    return Math.Round((int)(this.DisplayPlaybackSpeed) / 2.0, 1) + calculatedMax;
             }
             set
             {
@@ -210,8 +205,17 @@ namespace TeslaCamViewer
                     var cam = (TeslaCamFile.CameraType)Camera;
                     if (cam == TeslaCamFile.CameraType.FRONT)
                     {
-                        this.BottomVideoRowHeight = new GridLength(0);
                         this.TopVideoRowHeight = new GridLength(1, GridUnitType.Star);
+                        this.BottomVideoRowHeight = new GridLength(0);
+                        this.LeftVideoColumnWidth = new GridLength(1, GridUnitType.Star);
+                        this.RightVideoColumnWidth = new GridLength(0);
+                    }
+                    if (cam == TeslaCamFile.CameraType.BACK)
+                    {
+                        this.TopVideoRowHeight = new GridLength(1, GridUnitType.Star);
+                        this.BottomVideoRowHeight = new GridLength(0);
+                        this.LeftVideoColumnWidth = new GridLength(0);
+                        this.RightVideoColumnWidth = new GridLength(1, GridUnitType.Star);
                     }
                     if (cam == TeslaCamFile.CameraType.LEFT_REPEATER)
                     {
@@ -224,8 +228,8 @@ namespace TeslaCamViewer
                     {
                         this.TopVideoRowHeight = new GridLength(0);
                         this.BottomVideoRowHeight = new GridLength(1, GridUnitType.Star);
-                        this.RightVideoColumnWidth = new GridLength(1, GridUnitType.Star);
                         this.LeftVideoColumnWidth = new GridLength(0);
+                        this.RightVideoColumnWidth = new GridLength(1, GridUnitType.Star);
                     }
                     CurrentFullVideo = cam;
                 }

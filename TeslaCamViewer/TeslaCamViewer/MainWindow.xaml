@@ -29,8 +29,8 @@
                 </MenuItem>
                 <MenuItem Header="_Playback">
                     <MenuItem Header="_Automatically Play Next Clip" IsCheckable="True" IsChecked="{Binding EnableAutoPlaylist}"/>
-                    <MenuItem Header="Playback Speed" IsEnabled="False"/>
-                    <Slider x:Name="playbackSpeed_Slider" Width ="190px" Minimum="-50" Maximum="50" TickPlacement="BottomRight" Ticks="0" 
+                    <MenuItem x:Name="playbackSpeed_Display" Header="Playback Speed" IsEnabled="False"/>
+                    <Slider x:Name="playbackSpeed_Slider" Width ="190px" Minimum="-20" Maximum="18" TickPlacement="BottomRight" Ticks="0" 
                             Value="{Binding DisplayPlaybackSpeed}" Thumb.DragDelta="playbackSpeed_Slider_DragDelta" />
                 </MenuItem>
                 <MenuItem Header="_Help">
@@ -41,9 +41,9 @@
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="33*" MinWidth="15"/>
+                <ColumnDefinition Width="15*" MinWidth="15"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="66*" MinWidth="150"/>
+                <ColumnDefinition Width="85*" MinWidth="150"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
@@ -57,6 +57,11 @@
         DataType="{x:Type local:TeslaCamDirectoryCollection}"
         ItemsSource="{Binding Events}">
                             <StackPanel Orientation="Horizontal" Margin="2">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Delete all folders" Click="deleteAllFolders_MenuItem_Click"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
                                 <TextBlock Text="{Binding DisplayName}" />
                             </StackPanel>
                         </HierarchicalDataTemplate>
@@ -64,6 +69,11 @@
         DataType="{x:Type local:TeslaCamEventCollection}"
         ItemsSource="{Binding Recordings}">
                             <StackPanel Orientation="Horizontal" Margin="2">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Delete folder" Click="deleteFolder_MenuItem_Click"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
                                 <TextBlock Text="{Binding StartDate.DisplayValue}" />
                             </StackPanel>
                         </HierarchicalDataTemplate>
@@ -72,8 +82,7 @@
                             <StackPanel Orientation="Horizontal" Margin="2">
                                 <!--<StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Delete Event" Command="{Binding RelativeSource={RelativeSource AncestorType=ItemsControl},
-                             Path=DataContext.DeleteEventCommand}"/>
+                                        <MenuItem Header="Delete event"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>-->
                                 <!--<CheckBox IsChecked="{Binding IsSelected}"/>-->
@@ -92,7 +101,7 @@
             <TabControl x:Name="tabs" Grid.Column="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                 <TabItem Header="Browse">
                     <Frame x:Name="browseFrame"  NavigationUIVisibility="Hidden">
-                        
+
                     </Frame>
                 </TabItem>
                 <TabItem Header="Play">
@@ -103,34 +112,59 @@
                         </Grid.RowDefinitions>
                         <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="{Binding TopVideoRowHeight}" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="{Binding BottomVideoRowHeight}" />
                             </Grid.RowDefinitions>
                             <Grid Grid.Row="0" >
-                                <MediaElement x:Name="front" LoadedBehavior="Manual" ScrubbingEnabled="True">
+                                <StackPanel Orientation="Horizontal"  Margin="2" Width="Auto" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="videoDate" FontSize="20"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Grid.Row="1" >
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="1*"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="{Binding LeftVideoColumnWidth}"/>
+                                    <ColumnDefinition Width="{Binding RightVideoColumnWidth}"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="FRONT" Grid.Row="0" Grid.Column="0" TextBlock.TextAlignment="Center"></TextBlock>
+                                <TextBlock Text="BACK" Grid.Row="0" Grid.Column="1" TextBlock.TextAlignment="Center"></TextBlock>
+                                <MediaElement x:Name="front" LoadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"  Grid.Row="1" Grid.Column="0">
                                     <MediaElement.InputBindings>
                                         <MouseBinding Gesture="LeftDoubleClick" Command="{Binding SelectFullVideo}" 
                                                       CommandParameter="{x:Static local:TeslaCamFile+CameraType.FRONT}" />
                                     </MediaElement.InputBindings>
                                 </MediaElement>
-                                
+                                <MediaElement x:Name="rear" LoadedBehavior="Manual" ScrubbingEnabled="True" Stretch="Uniform"  Grid.Row="1" Grid.Column="1">
+                                    <MediaElement.InputBindings>
+                                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding SelectFullVideo}" 
+                                                      CommandParameter="{x:Static local:TeslaCamFile+CameraType.BACK}" />
+                                    </MediaElement.InputBindings>
+                                </MediaElement>
                             </Grid>
-                            <GridSplitter Margin="2" Height="2" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="DarkRed" />
-                            <Grid Grid.Row="2">
+                            <Grid Height="20" Grid.Row="2"></Grid>
+                            <Grid Grid.Row="3">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="1*"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="{Binding LeftVideoColumnWidth}"/>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="{Binding RightVideoColumnWidth}"/>
                                 </Grid.ColumnDefinitions>
-                                <MediaElement x:Name="left" Grid.Column="0" LoadedBehavior="Manual" MediaOpened="MediaElement_MediaOpened" MediaEnded="left_MediaEnded"  ScrubbingEnabled="True">
+                                <TextBlock Text="LEFT" Grid.Row="0" Grid.Column="0" TextBlock.TextAlignment="Center"></TextBlock>
+                                <TextBlock Text="RIGHT" Grid.Row="0" Grid.Column="1" TextBlock.TextAlignment="Center"></TextBlock>
+                                <MediaElement x:Name="left" LoadedBehavior="Manual" MediaOpened="MediaElement_MediaOpened" MediaEnded="left_MediaEnded"  ScrubbingEnabled="True" Grid.Row="1" Grid.Column="0">
                                     <MediaElement.InputBindings>
                                         <MouseBinding Gesture="LeftDoubleClick" Command="{Binding SelectFullVideo}" 
                                                       CommandParameter="{x:Static local:TeslaCamFile+CameraType.LEFT_REPEATER}" />
                                     </MediaElement.InputBindings>
                                 </MediaElement>
-                                <GridSplitter Margin="2 0 2 0" Width="2" Grid.Column="1"  VerticalAlignment="Stretch" HorizontalAlignment="Center"  Background="DarkRed" />
-                                <MediaElement x:Name="right" Grid.Column="2" LoadedBehavior="Manual" ScrubbingEnabled="True">
+                                <MediaElement x:Name="right" LoadedBehavior="Manual" ScrubbingEnabled="True" Grid.Row="1" Grid.Column="1">
                                     <MediaElement.InputBindings>
                                         <MouseBinding Gesture="LeftDoubleClick" Command="{Binding SelectFullVideo}" 
                                                       CommandParameter="{x:Static local:TeslaCamFile+CameraType.RIGHT_REPEATER}" />
