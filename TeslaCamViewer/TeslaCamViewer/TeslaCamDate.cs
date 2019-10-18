@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
-namespace TeslaCamViewer
+namespace TeslaCamViewerusing
 {
+    using System;
+    using System.Globalization;
+
     public class TeslaCamDate
     {
-        private const string FileFormat = "yyyy-MM-dd_HH-mm";
-        private const string DisplayFormat = "M/d/yyyy h:mm tt";
+        private const string FileFormat = "yyyy-MM-dd_HH-mm-ss";
+        private const string DisplayFormat = "dd/MM/yyyy HH:mm:ss tt";
 
         public string UTCDateString { get; private set; }
         public string DisplayValue

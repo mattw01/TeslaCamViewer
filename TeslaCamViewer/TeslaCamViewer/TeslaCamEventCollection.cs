@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
 
 namespace TeslaCamViewer
 {
@@ -16,6 +12,8 @@ namespace TeslaCamViewer
         public TeslaCamDate StartDate { get; private set; }
         public TeslaCamDate EndDate { get; private set; }
         public List<TeslaCamFileSet> Recordings { get; set; }
+
+        public string Directory { get; private set; }
         public TeslaCamFile ThumbnailVideo
         {
             get
@@ -31,6 +29,8 @@ namespace TeslaCamViewer
 
         public bool BuildFromDirectory(string Directory)
         {
+            this.Directory = Directory;
+
             // Get list of raw files
             string[] Files = System.IO.Directory.GetFiles(Directory, "*.mp4").OrderBy(x=>x).ToArray();
 
