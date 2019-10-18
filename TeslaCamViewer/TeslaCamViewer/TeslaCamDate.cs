@@ -1,6 +1,6 @@
 ﻿
 
-namespace TeslaCamViewerusing
+namespace TeslaCamViewer
 {
     using System;
     using System.Globalization;

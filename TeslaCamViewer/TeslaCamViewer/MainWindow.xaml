@@ -67,7 +67,7 @@
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate
         DataType="{x:Type local:TeslaCamEventCollection}"
-        ItemsSource="{Binding Recordings}" x:Name="event">
+        ItemsSource="{Binding Recordings}">
                             <StackPanel Orientation="Horizontal" Margin="2">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
