@@ -27,16 +27,22 @@ namespace TeslaCamViewer
         public MediaElement left;
         public MediaElement right;
         public MediaElement front;
+        public MediaElement back;
         public TabControl tabs;
+       
 
         public void LoadFileSet(TeslaCamFileSet set)
         {
             left.Stop();
             right.Stop();
             front.Stop();
+            back.Stop();
+
             bool playLeft = false;
             bool playRight = false;
             bool playFront = false;
+            bool playBack = false;
+
             foreach (var cam in set.Cameras)
             {
                 if (cam.CameraLocation == TeslaCamFile.CameraType.FRONT)
@@ -54,11 +60,17 @@ namespace TeslaCamViewer
                     this.right.Source = new Uri(cam.FilePath);
                     playRight = true;
                 }
+                if (cam.CameraLocation == TeslaCamFile.CameraType.BACK)
+                {
+                    this.back.Source = new Uri(cam.FilePath);
+                    playBack = true;
+                }
             }
 
             if (playLeft) left.Play();
             if (playRight) right.Play();
             if (playFront) front.Play();
+            if (playBack) back.Play();
             this.tabs.SelectedIndex = 1;
         }
     }
@@ -71,6 +83,7 @@ namespace TeslaCamViewer
         private MainWindowViewModel model;
         private TimeSpan TotalTime;
         private bool paused;
+        private string _drive = "";
 
         public MainWindow()
         {
@@ -84,6 +97,7 @@ namespace TeslaCamViewer
             model.VideoModel.left = this.left;
             model.VideoModel.right = this.right;
             model.VideoModel.front = this.front;
+            model.VideoModel.back = this.back;
             model.VideoModel.tabs = this.tabs;
         }
 
@@ -182,15 +196,20 @@ namespace TeslaCamViewer
                 DirectoryInfo teslaCamDir = null;
                 TeslaCamDirectoryCollection recentClips = null;
                 TeslaCamDirectoryCollection savedClips = null;
-
+                TeslaCamDirectoryCollection sentryClips = null;
+                
                 // Run the following in a worker thread and wait for it to finish
                 await Task.Run(() =>
                 {
+
+                   // string _drive = @"C:\";
+                   // string _drive = @"";
                     // Get all drives
                     var drives = System.IO.DriveInfo.GetDrives();
-                    drives = drives.Where(e => e.DriveType == DriveType.Removable ||
+                    drives = drives.Where(e => ((e.DriveType == DriveType.Removable ||
                         e.DriveType == DriveType.Network ||
-                        e.DriveType == DriveType.Fixed).ToArray();
+                        e.DriveType == DriveType.Fixed))).Where(e => (_drive.Length == 0) || (e.Name == _drive)).ToArray(); 
+
 
                     // Find the first drive containing a TeslaCam folder and select that folder
                     teslaCamDir = (from drive in drives
@@ -205,6 +224,7 @@ namespace TeslaCamViewer
                         // Get child dirs
                         var recentClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "RecentClips");
                         var savedClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "SavedClips");
+                        var sentryClipsDir = teslaCamDir.GetDirectories().FirstOrDefault(e => e.Name == "SentryClips");
 
                         // Load if found
                         if (recentClipsDir != null)
@@ -219,6 +239,12 @@ namespace TeslaCamViewer
                             savedClips.BuildFromBaseDirectory(savedClipsDir.FullName);
                             savedClips.SetDisplayName("Saved Clips");
                         }
+                        if (sentryClipsDir != null)
+                        {
+                            sentryClips = new TeslaCamDirectoryCollection();
+                            sentryClips.BuildFromBaseDirectory(sentryClipsDir.FullName);
+                            sentryClips.SetDisplayName("Sentry Clips");
+                        }
                     }
                 });
 
@@ -231,6 +257,7 @@ namespace TeslaCamViewer
                     // Add clips to UI tree
                     if (recentClips != null) { this.model.ListItems.Add(recentClips); }
                     if (savedClips != null) { this.model.ListItems.Add(savedClips); }
+                    if (sentryClips != null) { this.model.ListItems.Add(sentryClips); }
 
                     // Navigate
                     this.browseFrame.Navigate(new TeslaCamViewer.Views.RootCollectionView(this.model));
@@ -299,6 +326,7 @@ namespace TeslaCamViewer
         {
             if (model.EnableAutoSearch)
             {
+                _drive = "";
                 await this.TeslaCamSearchAsync();
             }
         }
@@ -387,6 +415,13 @@ namespace TeslaCamViewer
             this.left.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.right.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.front.SpeedRatio = model.CalculatedPlaybackSpeed;
+        }
+
+        private async void teslaCamSet_Menu_Click(object sender, RoutedEventArgs e)
+        {
+            _drive = ((MenuItem)sender).Header.ToString();
+            //@"C:\";
+            await TeslaCamSearchAsync();
         }
     }
 }
