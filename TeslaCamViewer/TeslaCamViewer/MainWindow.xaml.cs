@@ -1,4 +1,4 @@
-﻿using MahApps.Metro.Controls;
+using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using System;
 using System.Collections.Generic;
@@ -27,6 +27,7 @@ namespace TeslaCamViewer
         public MediaElement left;
         public MediaElement right;
         public MediaElement front;
+        public MediaElement back;
         public TabControl tabs;
 
         public void LoadFileSet(TeslaCamFileSet set)
@@ -34,9 +35,11 @@ namespace TeslaCamViewer
             left.Stop();
             right.Stop();
             front.Stop();
+            back.Stop();
             bool playLeft = false;
             bool playRight = false;
             bool playFront = false;
+            bool playBack = false;
             foreach (var cam in set.Cameras)
             {
                 if (cam.CameraLocation == TeslaCamFile.CameraType.FRONT)
@@ -54,11 +57,17 @@ namespace TeslaCamViewer
                     this.right.Source = new Uri(cam.FilePath);
                     playRight = true;
                 }
+                if (cam.CameraLocation == TeslaCamFile.CameraType.BACK)
+                {
+                    this.back.Source = new Uri(cam.FilePath);
+                    playBack = true;
+                }
             }
 
             if (playLeft) left.Play();
             if (playRight) right.Play();
             if (playFront) front.Play();
+            if (playBack) back.Play();
             this.tabs.SelectedIndex = 1;
         }
     }
@@ -84,6 +93,7 @@ namespace TeslaCamViewer
             model.VideoModel.left = this.left;
             model.VideoModel.right = this.right;
             model.VideoModel.front = this.front;
+            model.VideoModel.back = this.back;
             model.VideoModel.tabs = this.tabs;
         }
 
@@ -114,6 +124,7 @@ namespace TeslaCamViewer
                 left.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
                 right.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
                 front.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
+                back.Position = TimeSpan.FromSeconds(timeSlider.Value * TotalTime.TotalSeconds);
             }
         }
 
@@ -122,6 +133,7 @@ namespace TeslaCamViewer
             left.Pause();
             right.Pause();
             front.Pause();
+            back.Pause();
         }
 
         private void timeSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
@@ -129,6 +141,7 @@ namespace TeslaCamViewer
             left.Play();
             right.Play();
             front.Play();
+            back.Play();
         }
 
         private void timeSlider_DragDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
@@ -244,7 +257,7 @@ namespace TeslaCamViewer
             }
             catch (Exception ex)
             {
-                this.ShowMessageAsync("Could not load TeslaCam Drive", "An error ocurred: " + ex.Message).Wait();
+                await this.ShowMessageAsync("Could not load TeslaCam Drive", "An error ocurred: " + ex.Message);
             }
         }
 
@@ -261,12 +274,14 @@ namespace TeslaCamViewer
                 left.Play();
                 right.Play();
                 front.Play();
+                back.Play();
             }
             else
             {
                 left.Pause();
                 right.Pause();
                 front.Pause();
+                back.Pause();
             }
             paused = !paused;
         }
@@ -376,6 +391,8 @@ namespace TeslaCamViewer
             foreach (object i in ic.Items)
             {
                 TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
+                if (tvi2 == null)
+                    continue;
                 tvi = FindTviFromObjectRecursive(tvi2, o);
                 if (tvi != null) return tvi;
             }
@@ -387,6 +404,7 @@ namespace TeslaCamViewer
             this.left.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.right.SpeedRatio = model.CalculatedPlaybackSpeed;
             this.front.SpeedRatio = model.CalculatedPlaybackSpeed;
+            this.back.SpeedRatio = model.CalculatedPlaybackSpeed;
         }
     }
 }

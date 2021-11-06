@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -36,18 +36,18 @@ namespace TeslaCamViewer
                 }
             }
         }
-        private GridLength _BottomVideoRowHeight;
-        public GridLength BottomVideoRowHeight
+        private GridLength _MiddleVideoRowHeight;
+        public GridLength MiddleVideoRowHeight
         {
             get
             {
-                return this._BottomVideoRowHeight;
+                return this._MiddleVideoRowHeight;
             }
             set
             {
-                if (value != this._BottomVideoRowHeight)
+                if (value != this._MiddleVideoRowHeight)
                 {
-                    this._BottomVideoRowHeight = value;
+                    this._MiddleVideoRowHeight = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -80,6 +80,22 @@ namespace TeslaCamViewer
                 if (value != this._RightVideoColumnWidth)
                 {
                     this._RightVideoColumnWidth = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
+        private GridLength _BottomVideoRowHeight;
+        public GridLength BottomVideoRowHeight
+        {
+            get
+            {
+                return this._BottomVideoRowHeight;
+            }
+            set
+            {
+                if (value != this._BottomVideoRowHeight)
+                {
+                    this._BottomVideoRowHeight = value;
                     NotifyPropertyChanged();
                 }
             }
@@ -239,9 +255,10 @@ namespace TeslaCamViewer
         private void ResetVideoDisplay()
         {
             this.TopVideoRowHeight = new GridLength(1, GridUnitType.Star);
-            this.BottomVideoRowHeight = new GridLength(1, GridUnitType.Star);
+            this.MiddleVideoRowHeight = new GridLength(1, GridUnitType.Star);
             this.LeftVideoColumnWidth = new GridLength(1, GridUnitType.Star);
             this.RightVideoColumnWidth = new GridLength(1, GridUnitType.Star);
+            this.BottomVideoRowHeight = new GridLength(1, GridUnitType.Star);
         }
         public void LoadFileSet(TeslaCamFileSet set)
         {
