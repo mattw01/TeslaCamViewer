@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace TeslaCamViewer
@@ -16,9 +17,10 @@ namespace TeslaCamViewer
             UNKNOWN,
             LEFT_REPEATER,
             FRONT,
-            RIGHT_REPEATER
+            BACK,
+            RIGHT_REPEATER,
         }
-        private readonly string FileNameRegex = "([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2})-([a-z_]*).mp4";
+        private readonly Regex FileNameRegex = new Regex("([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}(?:-[0-9]{2})?)-([a-z_]*).mp4");
         public string FilePath { get; private set; }
         public string FileName { get { return System.IO.Path.GetFileName(FilePath); } }
         public TeslaCamDate Date { get; private set; }
@@ -29,13 +31,15 @@ namespace TeslaCamViewer
         public TeslaCamFile(string FilePath)
         {
             this.FilePath = FilePath;
-            var m = new System.Text.RegularExpressions.Regex(FileNameRegex).Matches(FileName);
+            var m = FileNameRegex.Matches(FileName);
             if (m.Count != 1)
                 throw new Exception("Invalid TeslaCamFile '" + FileName + "'");
             this.Date = new TeslaCamDate(m[0].Groups[1].Value);
             string cameraType = m[0].Groups[2].Value;
             if (cameraType == "front")
                 CameraLocation = CameraType.FRONT;
+            else if (cameraType == "back")
+                CameraLocation = CameraType.BACK;
             else if (cameraType == "left_repeater")
                 CameraLocation = CameraType.LEFT_REPEATER;
             else if (cameraType == "right_repeater")
