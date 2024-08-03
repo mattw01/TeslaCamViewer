@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace TeslaCamViewer
@@ -16,9 +18,10 @@ namespace TeslaCamViewer
             UNKNOWN,
             LEFT_REPEATER,
             FRONT,
-            RIGHT_REPEATER
+            BACK,
+            RIGHT_REPEATER,
         }
-        private readonly string FileNameRegex = "([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2})-([a-z_]*).mp4";
+        private static readonly Regex FileNameRegex = new Regex("([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}(?:-[0-9]{2})?)-([a-z_]*).mp4");
         public string FilePath { get; private set; }
         public string FileName { get { return System.IO.Path.GetFileName(FilePath); } }
         public TeslaCamDate Date { get; private set; }
@@ -29,19 +32,28 @@ namespace TeslaCamViewer
         public TeslaCamFile(string FilePath)
         {
             this.FilePath = FilePath;
-            var m = new System.Text.RegularExpressions.Regex(FileNameRegex).Matches(FileName);
-            if (m.Count != 1)
+            var match = FileNameRegex.Matches(FileName);
+            if (match.Count != 1)
                 throw new Exception("Invalid TeslaCamFile '" + FileName + "'");
-            this.Date = new TeslaCamDate(m[0].Groups[1].Value);
-            string cameraType = m[0].Groups[2].Value;
+            this.Date = new TeslaCamDate(match[0].Groups[1].Value);
+            string cameraType = match[0].Groups[2].Value;
             if (cameraType == "front")
                 CameraLocation = CameraType.FRONT;
+            else if (cameraType == "back")
+                CameraLocation = CameraType.BACK;
             else if (cameraType == "left_repeater")
                 CameraLocation = CameraType.LEFT_REPEATER;
             else if (cameraType == "right_repeater")
                 CameraLocation = CameraType.RIGHT_REPEATER;
             else
                 throw new Exception("Invalid Camera Type: '" + cameraType + "'");
+        }
+
+        public static bool Matches(string FilePath)
+        {
+            var fileName = System.IO.Path.GetFileName(FilePath);
+            var match = FileNameRegex.Matches(fileName);
+            return match.Count == 1;
         }
 
     }

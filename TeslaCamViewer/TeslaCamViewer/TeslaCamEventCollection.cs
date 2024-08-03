@@ -1,9 +1,6 @@
-﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
 
 namespace TeslaCamViewer
 {
@@ -16,6 +13,7 @@ namespace TeslaCamViewer
         public TeslaCamDate StartDate { get; private set; }
         public TeslaCamDate EndDate { get; private set; }
         public List<TeslaCamFileSet> Recordings { get; set; }
+        public EventMetadata EventMetadata { get; set; }
         public TeslaCamFile ThumbnailVideo
         {
             get
@@ -29,35 +27,28 @@ namespace TeslaCamViewer
             this.Recordings = new List<TeslaCamFileSet>();
         }
 
-        public bool BuildFromDirectory(string Directory)
+        public bool BuildFromDirectory(string directory)
         {
             // Get list of raw files
-            string[] Files = System.IO.Directory.GetFiles(Directory, "*.mp4").OrderBy(x=>x).ToArray();
+            string[] files = Directory.GetFiles(directory, "*.mp4").OrderBy(x=>x).ToArray();
 
             // Make sure there's at least one valid file
-            if (Files.Length < 1) { return false; }
+            if (files.Length < 1) { return false; }
 
-            // Create a list of cam files
-            List<TeslaCamFile> CurrentTeslaCams = new List<TeslaCamFile>(Files.Length);
-
-            // Convert raw file to cam file
-            foreach (var File in Files)
-            {
-                TeslaCamFile f = new TeslaCamFile(File);
-                CurrentTeslaCams.Add(f);
-            }
+            // Convert raw files to cam files
+            List<TeslaCamFile> currentTeslaCams =
+                files.Where(file => TeslaCamFile.Matches(file)).Select(file => new TeslaCamFile(file)).ToList();
 
             // Now get list of only distinct events
-            List<string> DistinctEvents = CurrentTeslaCams.Select(e => e.Date.UTCDateString).Distinct().ToList();
+            List<string> distinctEvents = currentTeslaCams.Select(e => e.Date.UTCDateString).Distinct().ToList();
 
             // Find the files that match the distinct event
-            foreach (var CurrentEvent in DistinctEvents)
+            foreach (var currentEvent in distinctEvents)
             {
-                List<TeslaCamFile> MatchedFiles = CurrentTeslaCams.Where(e => e.Date.UTCDateString == CurrentEvent).ToList();
-                TeslaCamFileSet CurrentFileSet = new TeslaCamFileSet();
-
-                CurrentFileSet.SetCollection(MatchedFiles);
-                this.Recordings.Add(CurrentFileSet);
+                List<TeslaCamFile> matchedFiles = currentTeslaCams.Where(e => e.Date.UTCDateString == currentEvent).ToList();
+                TeslaCamFileSet currentFileSet = new TeslaCamFileSet();
+                currentFileSet.SetCollection(matchedFiles);
+                this.Recordings.Add(currentFileSet);
             }
 
             // Set metadata

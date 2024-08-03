@@ -1,11 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Input;
+using System.Text.Json;
 
 namespace TeslaCamViewer
 {
@@ -16,6 +13,7 @@ namespace TeslaCamViewer
     {
         public TeslaCamDate Date { get; private set; }
         public List<TeslaCamFile> Cameras { get; private set; }
+        public string Directory { get; private set; }
 
         public TeslaCamFile ThumbnailVideo
         {
@@ -25,10 +23,34 @@ namespace TeslaCamViewer
             }
         }
 
-        public void SetCollection(List<TeslaCamFile> Cameras)
+        public void SetCollection(List<TeslaCamFile> cameras)
         {
-            this.Cameras = Cameras;
-            this.Date = Cameras.First().Date;
+            this.Cameras = cameras;
+            this.Date = cameras.First().Date;
+            this.Directory = cameras.Select(file => file.FileDirectory).Distinct().First();
+        }
+
+        private Lazy<EventMetadata> eventMetadata;
+
+        public EventMetadata EventMetadata
+        {
+            get { return eventMetadata.Value;  }
+        }
+
+        public TeslaCamFileSet()
+        {
+            eventMetadata = new Lazy<EventMetadata>(computeEventMetadata);
+        }
+
+        private EventMetadata computeEventMetadata() {
+            var eventMetadata = Path.Combine(Directory, "event.json");
+            if (!File.Exists(eventMetadata))
+            {
+                return null;
+            }
+
+            var json = File.ReadAllText(eventMetadata);
+            return JsonSerializer.Deserialize<EventMetadata>(json);
         }
     }
 }
